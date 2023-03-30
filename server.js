@@ -1,12 +1,14 @@
 const { spawn } = require('child_process');
 const express = require("express")
+const cors = require('cors')
 const bodyParser = require('body-parser');
 const app = express()
 
-app.use(bodyParser.json());
-
 require("dotenv").config()
 const PORT = process.env.PORT || 3000
+
+app.use(cors({origin: ['http://localhost:19008']}))
+app.use(bodyParser.json());
 
 app.get('/classes', (req, res) => {
     res.json({
@@ -18,13 +20,11 @@ app.get('/classes', (req, res) => {
     })
 })
 
-app.post('/predict', async (req, res) => {
-    let { files } = req.body
-
+app.post('/predict', (req, res) => {
+    const { files } = req.body
     let pred_data = {}
 
-    const pythonProcess = spawn('python', ['./pyscripts/models.py', ...files]);
-
+    const pythonProcess = spawn('python', ['./pyscripts/models.py', JSON.stringify(files)]);
     pythonProcess.stdout.on('data', (data) => {
         try {
             pred_data = JSON.parse(data.toString())
@@ -33,7 +33,7 @@ app.post('/predict', async (req, res) => {
             console.error(error)
         }
     });
-
+    
     pythonProcess.stderr.on('data', (data) => {
         pred_data = JSON.parse(data.toString())
     });
