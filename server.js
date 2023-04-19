@@ -2,9 +2,9 @@ const { spawn } = require('child_process');
 const express = require("express")
 const cors = require('cors')
 const fileUpload = require('express-fileupload');
-const fs = require('fs')
 var base64Img = require('base64-img');
 const bodyParser = require('body-parser');
+const { getIngredients } = require('./food_data/food');
 const app = express()
 
 require("dotenv").config()
@@ -19,18 +19,23 @@ app.use(fileUpload({
 
 app.get('/classes', (req, res) => {
     res.json({
-        1:'bangbang-chicken',
-        2:'dan-dan-noodles',
+        1: 'bangbang-chicken',
+        2: 'dan-dan-noodles',
         3: 'sichuan-hot-pot',
         4: 'twice-cooked-pork',
         5: 'wontons-in-chili-oil',
     })
 })
 
+app.get('/ingredients/:ingredient', (req, res) => {
+    const { ingredient } = req.params
+    let ingredients = getIngredients(ingredient)
+    res.json(ingredients)
+})
+
 app.post('/upload', (req, res) => {
     // Access the uploaded file using req.files
     const uploadedFile = req.files.file;
-    console.log(uploadedFile.values)
     res.send(uploadedFile)
 });
  
@@ -48,10 +53,10 @@ app.post('/predict', (req, res) => {
     const pythonProcess = spawn('python', ['./pyscripts/models.py', JSON.stringify([file])]);
     pythonProcess.stdout.on('data', (data) => {
         try {
-            console.log(JSON.parse(data.toString()))
+            // console.log(JSON.parse(data.toString()))
             pred_data = JSON.parse(data.toString())
         } catch (error) {
-            console.log(data.toString())
+            // console.log(data.toString())
             console.error(error)
         }
     });
@@ -63,7 +68,7 @@ app.post('/predict', (req, res) => {
     pythonProcess.on('exit', (code) => {
         console.log(`Python script exited with code ${code}`);
         if (code == 0) {
-            console.log(pred_data)
+            // console.log(pred_data)
             res.status(200).json(pred_data)
         } else {
             res.status(400).json({message: "Python script error", error: pred_data['stderr']})
